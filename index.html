@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>203동 수수료 계산기</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #F4F6FA;
+  --card:     #FFFFFF;
+  --card2:    #F9FAFC;
+  --border:   #E4E8F0;
+  --border2:  #D0D7E8;
+  --blue:     #3B6EF8;
+  --blue-lt:  #EEF3FF;
+  --green:    #18A86B;
+  --green-lt: #E8F8F1;
+  --red:      #E84646;
+  --red-lt:   #FEF0F0;
+  --amber:    #D97706;
+  --amber-lt: #FEF3E2;
+  --purple:   #7C3AED;
+  --purple-lt:#F3EFFE;
+  --text:     #1A1D2E;
+  --text2:    #5A6180;
+  --text3:    #9CA3AF;
+  --shadow:   0 2px 12px rgba(30,40,80,0.07);
+  --shadow-md:0 4px 24px rgba(30,40,80,0.11);
+  --r:        14px;
+  --r-sm:     8px;
+}
+
+body {
+  font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── 레이아웃 ── */
+.layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+}
+.left-col  { grid-column: 1; grid-row: 1 / 3; background: #1B2240; padding: 32px 28px 40px; overflow-y: auto; }
+.right-col { grid-column: 2; grid-row: 1 / 3; padding: 32px 36px 40px; overflow-y: auto; }
+
+@media (max-width: 800px) {
+  .layout { grid-template-columns: 1fr; grid-template-rows: auto auto; }
+  .left-col  { grid-column: 1; grid-row: 1; padding: 24px 18px 28px; }
+  .right-col { grid-column: 1; grid-row: 2; padding: 20px 18px 48px; background: var(--bg); }
+}
+
+/* ── 헤더 ── */
+.logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+.logo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 3px rgba(59,110,248,0.25); }
+.logo-text { font-size: 12px; letter-spacing: 2px; color: #7B87B4; font-family: 'DM Mono', monospace; text-transform: uppercase; }
+
+.left-title { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px; letter-spacing: -0.3px; }
+.left-sub   { font-size: 13px; color: #7B87B4; margin-bottom: 32px; }
+
+/* ── 입력 섹션 레이블 ── */
+.section-label {
+  font-size: 10px; letter-spacing: 1.5px; font-weight: 600;
+  color: #4A5580; text-transform: uppercase; margin-bottom: 10px;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── 호실 입력 ── */
+.room-box {
+  background: #232B4E; border: 1.5px solid #2E3A60;
+  border-radius: var(--r-sm); padding: 14px 16px; margin-bottom: 20px;
+  transition: border-color 0.2s;
+}
+.room-box:focus-within { border-color: var(--blue); }
+.room-label { font-size: 11px; color: #7B87B4; margin-bottom: 6px; }
+.room-input-row { display: flex; align-items: center; gap: 10px; }
+.room-input {
+  background: transparent; border: none; outline: none;
+  font-family: 'DM Mono', monospace; font-size: 32px; font-weight: 500;
+  color: #fff; width: 130px; letter-spacing: 2px;
+}
+.room-input::placeholder { color: #3D4870; }
+.room-hint { font-size: 11px; color: #4A5580; line-height: 1.8; }
+.parsed-tag {
+  margin-top: 8px; font-size: 12px; color: #7B87B4; min-height: 18px;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── 토글 ── */
+.toggle-label { margin-bottom: 10px; margin-top: 20px; }
+.toggle-wrap {
+  display: grid; grid-template-columns: 1fr 1fr;
+  background: #232B4E; border-radius: var(--r-sm);
+  border: 1.5px solid #2E3A60; overflow: hidden; margin-bottom: 20px;
+}
+.toggle-btn {
+  padding: 14px 10px; text-align: center; cursor: pointer;
+  font-size: 13px; font-weight: 500; color: #4A5580;
+  transition: all 0.18s; user-select: none; line-height: 1.4;
+}
+.toggle-btn .t-icon { font-size: 20px; display: block; margin-bottom: 5px; }
+.toggle-btn .t-sub  { font-size: 10px; font-weight: 400; color: #3D4870; display: block; margin-top: 2px; }
+.toggle-btn.active-r { background: rgba(59,110,248,0.18); color: #7FAAFF; }
+.toggle-btn.active-r .t-sub { color: #4A6EBF; }
+.toggle-btn.active-d { background: rgba(24,168,107,0.16); color: #4FD9A0; }
+.toggle-btn.active-d .t-sub { color: #2A7A55; }
+.toggle-btn:hover:not(.active-r):not(.active-d) { background: #2A3358; color: #7B87B4; }
+
+/* ── 할인 슬라이더 ── */
+.disc-section { margin-top: 20px; }
+.disc-fixed {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #232B4E; border-radius: var(--r-sm); padding: 12px 16px; margin-bottom: 12px;
+}
+.disc-fixed .df-label { font-size: 12px; color: #7B87B4; }
+.disc-fixed .df-val   { font-size: 20px; font-weight: 700; color: #4FD9A0; font-family: 'DM Mono', monospace; }
+.disc-fixed .df-tag   { font-size: 10px; color: #3D4870; background: #1B2240; padding: 2px 8px; border-radius: 20px; }
+
+.disc-slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.disc-slider-row label { font-size: 12px; color: #7B87B4; min-width: 60px; }
+.disc-slider-row input[type=range] {
+  flex: 1; -webkit-appearance: none; height: 4px;
+  background: #2E3A60; border-radius: 2px; outline: none; cursor: pointer;
+}
+.disc-slider-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px;
+  border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 3px rgba(217,119,6,0.25);
+}
+.disc-slider-row .sv { font-size: 18px; font-weight: 700; color: #F5C842; font-family: 'DM Mono', monospace; min-width: 52px; text-align: right; }
+
+.disc-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ds-card { background: #232B4E; border-radius: var(--r-sm); padding: 14px 16px; }
+.ds-card .dsc-label { font-size: 11px; color: #4A5580; margin-bottom: 6px; }
+.ds-card .dsc-val   { font-size: 24px; font-weight: 700; font-family: 'DM Mono', monospace; }
+
+/* ═══════════════════════════
+   오른쪽 결과 영역
+═══════════════════════════ */
+.right-col { background: var(--bg); }
+
+.placeholder-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 60vh; color: var(--text3); text-align: center; gap: 14px;
+}
+.placeholder-state .ph-icon { font-size: 52px; }
+.placeholder-state .ph-title { font-size: 17px; font-weight: 600; color: var(--text2); }
+.placeholder-state .ph-sub   { font-size: 13px; color: var(--text3); }
+
+/* 결과 헤더 */
+.result-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px; margin-bottom: 24px;
+}
+.rh-unit { font-size: 28px; font-weight: 700; color: var(--blue); font-family: 'DM Mono', monospace; letter-spacing: 1px; }
+.rh-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+.badge-pill {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  padding: 4px 12px; border-radius: 20px;
+}
+
+/* 분양가 카드 3종 */
+.price-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 24px; }
+.pc { background: var(--card); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 14px; text-align: center; box-shadow: var(--shadow); }
+.pc .pcl { font-size: 10px; color: var(--text3); font-weight: 500; margin-bottom: 6px; letter-spacing: 0.3px; }
+.pc .pcv { font-size: 13px; font-weight: 600; color: var(--text); font-family: 'DM Mono', monospace; line-height: 1.4; }
+.pc.hl   { border-color: var(--green); background: var(--green-lt); }
+.pc.hl .pcv { color: var(--green); }
+
+/* 수수료 카드 */
+.section-title {
+  font-size: 11px; letter-spacing: 1.5px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; margin-bottom: 12px; font-family: 'DM Mono', monospace;
+}
+
+.comm-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 20px; margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+
+.comm-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 0; border-bottom: 1px solid var(--border);
+}
+.comm-row:last-child { border-bottom: none; }
+.cr-left { display: flex; align-items: center; gap: 10px; }
+.cr-dot  { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.cr-name { font-size: 14px; color: var(--text); font-weight: 500; }
+.cr-right { display: flex; align-items: center; gap: 10px; }
+.cr-pct  { font-size: 11px; color: var(--text3); background: var(--card2); padding: 2px 8px; border-radius: 4px; font-family: 'DM Mono', monospace; }
+.cr-amt  { font-size: 15px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--text); min-width: 130px; text-align: right; }
+
+.comm-total {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 20px; background: var(--card2); border-radius: var(--r-sm);
+  border: 1px solid var(--border); margin-top: 12px;
+}
+.comm-total .ct-label { font-size: 13px; font-weight: 600; color: var(--text2); }
+.comm-total .ct-val   { font-size: 18px; font-weight: 700; color: var(--amber); font-family: 'DM Mono', monospace; }
+
+/* 비율 바 */
+.ratio-bar { height: 8px; border-radius: 4px; display: flex; gap: 3px; margin: 16px 0 8px; overflow: hidden; }
+.rb-seg    { border-radius: 4px; transition: flex 0.3s; }
+.ratio-legend { display: flex; flex-wrap: wrap; gap: 12px; }
+.rl-item  { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text3); }
+.rl-dot   { width: 8px; height: 8px; border-radius: 50%; }
+
+/* 할인 & 실구매가 */
+.disc-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 20px; margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.disc-formula {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 13px; color: var(--text2); margin-bottom: 16px; line-height: 2;
+}
+.df-chip {
+  display: inline-block; padding: 3px 10px; border-radius: 6px;
+  font-weight: 600; font-family: 'DM Mono', monospace; font-size: 13px;
+}
+
+.buyer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.buyer-card { background: var(--card2); border-radius: var(--r-sm); padding: 16px; border: 1px solid var(--border); }
+.buyer-card .bk-label   { font-size: 10px; color: var(--text3); font-weight: 600; margin-bottom: 8px; letter-spacing: 0.5px; }
+.buyer-card .bk-formula { font-size: 12px; color: var(--text2); line-height: 1.8; margin-bottom: 10px; }
+.buyer-card .bk-val     { font-size: 16px; font-weight: 700; font-family: 'DM Mono', monospace; }
+
+/* MGM / 직접 분배 */
+.dist-card {
+  border-radius: var(--r); padding: 20px; margin-bottom: 0;
+  box-shadow: var(--shadow);
+}
+.dist-card.realtor { background: var(--blue-lt); border: 1px solid rgba(59,110,248,0.2); }
+.dist-card.direct  { background: var(--green-lt); border: 1px solid rgba(24,168,107,0.2); }
+
+.dist-title { font-size: 11px; font-weight: 700; letter-spacing: 1px; margin-bottom: 14px; font-family: 'DM Mono', monospace; }
+.dist-row   { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
+.dist-row:last-child { border-bottom: none; }
+.dr-label   { font-size: 13px; color: var(--text2); font-weight: 500; }
+.dr-right   { display: flex; align-items: center; gap: 8px; }
+.dr-pct     { font-size: 11px; color: var(--text3); background: rgba(255,255,255,0.7); padding: 2px 8px; border-radius: 4px; font-family: 'DM Mono', monospace; }
+.dr-val     { font-size: 15px; font-weight: 700; font-family: 'DM Mono', monospace; }
+
+.dist-final {
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(0,0,0,0.1);
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+}
+.df-block   { flex: 1; }
+.df-title   { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+.df-sub     { font-size: 10px; color: var(--text3); }
+.df-big     { font-size: 18px; font-weight: 700; font-family: 'DM Mono', monospace; }
+
+/* 반응형 */
+@media (max-width: 600px) {
+  .price-cards  { grid-template-columns: 1fr 1fr; }
+  .buyer-grid   { grid-template-columns: 1fr; }
+  .rh-unit      { font-size: 22px; }
+  .cr-amt       { font-size: 13px; min-width: 100px; }
+  .dist-final   { flex-direction: column; gap: 10px; }
+}
+@media (max-width: 400px) {
+  .price-cards  { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ══ 왼쪽 입력 패널 ══ -->
+<div class="left-col">
+  <div class="logo-row">
+    <div class="logo-dot"></div>
+    <span class="logo-text">203동 · 오피스텔</span>
+  </div>
+  <div class="left-title">수수료 계산기</div>
+  <div class="left-sub">호실 입력 → 유형 선택 → 할인 조정</div>
+
+  <!-- 호실 -->
+  <div class="section-label">호실 입력</div>
+  <div class="room-box">
+    <div class="room-label">호실번호 (3~4자리)</div>
+    <div class="room-input-row">
+      <input type="number" class="room-input" id="roomInput" placeholder="803" inputmode="numeric">
+      <div class="room-hint">803 → 8층 03호<br>1503 → 15층 03호</div>
+    </div>
+  </div>
+  <div class="parsed-tag" id="parsedLabel"></div>
+
+  <!-- 고객 유형 -->
+  <div class="section-label toggle-label">고객 유형</div>
+  <div class="toggle-wrap">
+    <div class="toggle-btn active-d" id="btn-direct" onclick="setType('direct')">
+      <span class="t-icon">🙋</span>
+      직접 손님
+      <span class="t-sub">팀장 35% · 직원 65%</span>
+    </div>
+    <div class="toggle-btn" id="btn-realtor" onclick="setType('realtor')">
+      <span class="t-icon">🏪</span>
+      부동산 MGM
+      <span class="t-sub">MGM 수수료 지급</span>
+    </div>
+  </div>
+
+  <!-- 할인 설정 -->
+  <div class="section-label">고객 할인 설정</div>
+  <div class="disc-section">
+    <div class="disc-fixed">
+      <div>
+        <div class="df-label">고정 할인</div>
+        <div style="font-size:10px;color:#3D4870;margin-top:2px;">변경 불가 · 필수 적용</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="df-val">17.5%</div>
+        <div class="df-tag">고정</div>
+      </div>
+    </div>
+
+    <div class="disc-slider-row">
+      <label>추가 할인</label>
+      <input type="range" id="extraDisc" min="0" max="4.5" step="0.5" value="0">
+      <span class="sv" id="extraDiscVal">+0.0%</span>
+    </div>
+
+    <div class="disc-summary">
+      <div class="ds-card">
+        <div class="dsc-label">총 고객할인</div>
+        <div class="dsc-val" style="color:#FF6B6B;" id="totalDiscVal">17.5%</div>
+      </div>
+      <div class="ds-card">
+        <div class="dsc-label" id="summaryRightLabel">팀장+직원 추가</div>
+        <div class="dsc-val" id="summaryRightVal" style="color:#4FD9A0;">4.5%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 오른쪽 결과 패널 ══ -->
+<div class="right-col">
+  <div id="resultArea">
+    <div class="placeholder-state">
+      <div class="ph-icon">🏢</div>
+      <div class="ph-title">왼쪽에서 호실번호를 입력하세요</div>
+      <div class="ph-sub">입력 즉시 수수료가 계산됩니다</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- .layout -->
+
+<script>
+const PRICES = {
+  "26":  { "4-5":{total:124000000,vat:8539090},  "6-18":{total:127900000,vat:8807659},  "19-23":{total:129200000,vat:8897181} },
+  "28A": { "4-5":{total:132900000,vat:9151979},  "6-18":{total:137100000,vat:9441204},  "19-23":{total:138500000,vat:9537613} },
+  "28B": { "4-5":{total:133700000,vat:9207068},  "6-18":{total:137900000,vat:9496295},  "19-23":{total:139300000,vat:9592704} },
+  "55":  { "4-5":{total:245800000,vat:16926681}, "6-10":{total:251100000,vat:17291659}, "11-18":{total:261800000,vat:18028500}, "19-23":{total:264400000,vat:18207545} },
+  "56":  { "4-5":{total:246700000,vat:16988659}, "6-10":{total:252000000,vat:17353636}, "11-18":{total:262600000,vat:18083590}, "19-23":{total:265300000,vat:18269522} },
+  "59":  { "4-5":{total:260300000,vat:17925204}, "6-10":{total:265900000,vat:18310840}, "11-18":{total:277100000,vat:19082113}, "19-23":{total:279900000,vat:19274931} }
+};
+const UNIT_TYPE = {"01":"59","02":"59","03":"26","04":"26","05":"56","06":"28B","07":"55","08":"28A","09":"55","10":"56"};
+const TYPE_COLOR = {"59":"#3B6EF8","26":"#18A86B","56":"#D97706","28A":"#E84646","28B":"#7C3AED","55":"#DB2777"};
+const TYPE_LT    = {"59":"#EEF3FF","26":"#E8F8F1","56":"#FEF3E2","28A":"#FEF0F0","28B":"#F3EFFE","55":"#FDF2F8"};
+
+const COMM_RATES = { "대대행(회사)":0.005, "본부장":0.015, "팀장":0.027, "직원(컨설턴트)":0.053 };
+const COMM_COLORS = ["#3B6EF8","#18A86B","#D97706","#E84646"];
+
+// 총 32% 구조: 대대행0.5% + 본부장1.5% + 팀장2.7% + 직원5.3% + 고객할인풀22%
+const FIXED = 0.175;         // 고정 고객할인 17.5%
+const DISC_POOL = 0.22;      // 고객할인 전체 풀 22% (17.5 + 최대4.5)
+let cType = 'direct';
+
+function getZone(t,f){
+  if(["26","28A","28B"].includes(t)){ return f<=5?"4-5":f<=18?"6-18":"19-23"; }
+  return f<=5?"4-5":f<=10?"6-10":f<=18?"11-18":"19-23";
+}
+function fw(n){ return Math.round(n).toLocaleString('ko-KR')+'원'; }
+function fp(r){ return (r*100).toFixed(1)+'%'; }
+function parseRoom(v){
+  const s=String(v).trim();
+  if(s.length===3) return {floor:parseInt(s[0]),unit:s.slice(1)};
+  if(s.length===4) return {floor:parseInt(s.slice(0,2)),unit:s.slice(2)};
+  return null;
+}
+function getExtra(){ return parseFloat(document.getElementById('extraDisc').value)/100; }
+
+function setType(t){
+  cType=t;
+  document.getElementById('btn-realtor').className='toggle-btn'+(t==='realtor'?' active-r':'');
+  document.getElementById('btn-direct').className ='toggle-btn'+(t==='direct' ?' active-d':'');
+  render();
+}
+
+function updateSummary(){
+  const e=getExtra(), td=FIXED+e, pool=DISC_POOL-td;
+  document.getElementById('extraDiscVal').textContent='+'+fp(e);
+  document.getElementById('totalDiscVal').textContent=fp(td);
+  const lbl=document.getElementById('summaryRightLabel');
+  const val=document.getElementById('summaryRightVal');
+  if(cType==='realtor'){ lbl.textContent='부동산 MGM'; val.style.color='#7FAAFF'; }
+  else                 { lbl.textContent='팀장+직원 추가'; val.style.color='#4FD9A0'; }
+  val.textContent=fp(pool);
+}
+
+function render(){
+  updateSummary();
+  const val=document.getElementById('roomInput').value;
+  const area=document.getElementById('resultArea');
+  const parsed=document.getElementById('parsedLabel');
+
+  function ph(icon,title,sub){
+    parsed.textContent='';
+    area.innerHTML=`<div class="placeholder-state"><div class="ph-icon">${icon}</div><div class="ph-title">${title}</div><div class="ph-sub">${sub||''}</div></div>`;
+  }
+
+  if(!val) return ph('🏢','호실번호를 입력하세요','입력 즉시 수수료가 계산됩니다');
+  const room=parseRoom(val);
+  if(!room) return ph('⚠️','3자리 또는 4자리로 입력하세요','예) 803 · 1503');
+
+  const {floor,unit}=room;
+  const type=UNIT_TYPE[unit];
+  if(!type){ parsed.innerHTML=`<span style="color:#FF6B6B;">⚠ 없는 호실 (01~10호만 가능)</span>`; return ph('⚠️','없는 호실입니다','01호 ~ 10호만 존재합니다'); }
+  if(floor<4||floor>23){ parsed.innerHTML=`<span style="color:#FF6B6B;">⚠ 4~23층만 분양 대상</span>`; return ph('⚠️','층수를 확인하세요','4층 ~ 23층만 분양 대상입니다'); }
+
+  const extra=getExtra(), totalDisc=FIXED+extra, poolRate=DISC_POOL-totalDisc;
+  const col=TYPE_COLOR[type], lt=TYPE_LT[type];
+  parsed.innerHTML=`<span style="color:#4FD9A0;">✓ ${floor}층 ${unit}호 · <span style="color:${col};">${type}㎡</span></span>`;
+
+  const zone=getZone(type,floor);
+  const {total:tp,vat}=PRICES[type][zone];
+  const base=tp-vat;
+
+  const comms={};
+  let tComm=0;
+  for(const [n,r] of Object.entries(COMM_RATES)){ comms[n]=Math.round(base*r); tComm+=comms[n]; }
+
+  // 부동산일 때 팀장·직원에서 200만원 차감
+  const GUARANTEE       = 2000000;
+  const GUARANTEE_TEAM  = 660000;
+  const GUARANTEE_STAFF = 1340000;
+
+  // 실제 표시할 수수료 (부동산이면 차감 적용)
+  const displayComms = { ...comms };
+  if(cType==='realtor'){
+    displayComms['팀장']          = comms['팀장']          - GUARANTEE_TEAM;
+    displayComms['직원(컨설턴트)'] = comms['직원(컨설턴트)'] - GUARANTEE_STAFF;
+  }
+  const displayTComm = Object.values(displayComms).reduce((a,b)=>a+b,0);
+
+  const poolAmt=Math.round(base*poolRate);
+  const discAmt=Math.round(base*totalDisc);
+  const discBase=base-discAmt;
+  const finalVat=discBase+vat, finalNoVat=discBase;
+
+  const zoneLbl={"4-5":"4~5층","6-18":"6~18층","6-10":"6~10층","11-18":"11~18층","19-23":"19~23층"}[zone];
+
+  // ── 수수료 테이블 행 생성 ──
+  // 부동산: 팀장·직원에 차감 표시, 직접: 그대로
+  function commRows(){
+    return Object.entries(displayComms).map(([n,a],i)=>{
+      const isDeducted = cType==='realtor' && (n==='팀장'||n==='직원(컨설턴트)');
+      const deductAmt  = n==='팀장' ? GUARANTEE_TEAM : GUARANTEE_STAFF;
+      const subLabel   = isDeducted
+        ? `<div style="font-size:10px;color:#E84646;margin-top:2px;">− ${fw(deductAmt)} (MGM 보장)</div>`
+        : '';
+      return `
+      <div class="comm-row">
+        <div class="cr-left">
+          <div class="cr-dot" style="background:${COMM_COLORS[i]};"></div>
+          <div>
+            <div class="cr-name">${n}</div>
+            ${subLabel}
+          </div>
+        </div>
+        <div class="cr-right">
+          <div class="cr-pct">${fp(Object.values(COMM_RATES)[i])}</div>
+          <div class="cr-amt" style="${isDeducted?'color:var(--text2);':''}">${fw(a)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── MGM / 직접 분배 ──
+  let distHTML='';
+  if(cType==='realtor'){
+    const mgmTotal = poolAmt + GUARANTEE; // 할인에 따른 MGM + 무조건 200만 보장
+    distHTML=`
+    <div class="dist-card realtor">
+      <div class="dist-title" style="color:#3B6EF8;">🏪 부동산 MGM 수수료</div>
+
+      <div class="dist-row">
+        <div class="dr-label">할인 연동 MGM</div>
+        <div class="dr-right">
+          <div class="dr-pct">과표 × ${fp(poolRate)}</div>
+          <div class="dr-val" style="color:#3B6EF8;">${fw(poolAmt)}</div>
+        </div>
+      </div>
+      <div class="dist-row">
+        <div class="dr-label">최소보장 (팀장+직원 차감분)</div>
+        <div class="dr-right">
+          <div class="dr-pct">무조건 고정</div>
+          <div class="dr-val" style="color:#D97706;">${fw(GUARANTEE)}</div>
+        </div>
+      </div>
+      <div class="dist-row" style="border-bottom:none;">
+        <div class="dr-label" style="font-weight:700;">부동산 총 수령</div>
+        <div class="dr-right">
+          <div class="dr-val" style="color:#3B6EF8;font-size:19px;">${fw(mgmTotal)}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(59,110,248,0.15);">
+        <div style="font-size:11px;color:#5A7ACC;margin-bottom:10px;font-weight:600;">팀장 · 직원 차감 내역 (MGM 보장 재원)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:rgba(255,255,255,0.6);border-radius:8px;padding:12px;border:1px solid rgba(217,119,6,0.2);">
+            <div style="font-size:10px;color:#92651A;margin-bottom:4px;">팀장에서 차감</div>
+            <div style="font-size:17px;font-weight:700;font-family:'DM Mono',monospace;color:#D97706;">${fw(GUARANTEE_TEAM)}</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.6);border-radius:8px;padding:12px;border:1px solid rgba(232,70,70,0.2);">
+            <div style="font-size:10px;color:#922020;margin-bottom:4px;">직원에서 차감</div>
+            <div style="font-size:17px;font-weight:700;font-family:'DM Mono',monospace;color:#E84646;">${fw(GUARANTEE_STAFF)}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    const tExtra=Math.round(poolAmt*0.35), sExtra=poolAmt-tExtra;
+    // 직접 손님은 차감 없으므로 comms 원본 사용
+    const tTotal=comms['팀장']+tExtra, sTotal=comms['직원(컨설턴트)']+sExtra;
+    distHTML=`
+    <div class="dist-card direct">
+      <div class="dist-title" style="color:#18A86B;">🙋 직접 손님 추가 분배 · ${fp(poolRate)} → 팀장 35% / 직원 65%</div>
+      <div class="dist-row">
+        <div class="dr-label">팀장 추가분</div>
+        <div class="dr-right">
+          <div class="dr-pct">35%</div>
+          <div class="dr-val" style="color:#D97706;">+${fw(tExtra)}</div>
+        </div>
+      </div>
+      <div class="dist-row" style="border-bottom:none;">
+        <div class="dr-label">직원 추가분</div>
+        <div class="dr-right">
+          <div class="dr-pct">65%</div>
+          <div class="dr-val" style="color:#E84646;">+${fw(sExtra)}</div>
+        </div>
+      </div>
+      <div class="dist-final">
+        <div class="df-block">
+          <div class="df-title">팀장 최종 수령</div>
+          <div class="df-sub">기본 ${fw(comms['팀장'])} + 추가 ${fw(tExtra)}</div>
+          <div class="df-big" style="color:#D97706;margin-top:4px;">${fw(tTotal)}</div>
+        </div>
+        <div style="width:1px;background:rgba(0,0,0,0.08);align-self:stretch;"></div>
+        <div class="df-block">
+          <div class="df-title">직원 최종 수령</div>
+          <div class="df-sub">기본 ${fw(comms['직원(컨설턴트)'])} + 추가 ${fw(sExtra)}</div>
+          <div class="df-big" style="color:#E84646;margin-top:4px;">${fw(sTotal)}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  area.innerHTML=`
+  <!-- 헤더 -->
+  <div class="result-header">
+    <div>
+      <div class="rh-unit">203동 &nbsp;${floor}층 &nbsp;${unit}호</div>
+      <div class="rh-badges">
+        <span class="badge-pill" style="background:${lt};color:${col};">${type}㎡</span>
+        <span class="badge-pill" style="background:#F1F3F9;color:#5A6180;">${zoneLbl}</span>
+        <span class="badge-pill" style="${cType==='realtor'?'background:#EEF3FF;color:#3B6EF8;':'background:#E8F8F1;color:#18A86B;'}">${cType==='realtor'?'🏪 부동산':'🙋 직접'}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 분양가 3종 -->
+  <div class="section-title">분양가 정보</div>
+  <div class="price-cards">
+    <div class="pc">
+      <div class="pcl">총 분양가</div>
+      <div class="pcv">${fw(tp)}</div>
+    </div>
+    <div class="pc">
+      <div class="pcl">부가세</div>
+      <div class="pcv" style="color:var(--text2);">${fw(vat)}</div>
+    </div>
+    <div class="pc hl">
+      <div class="pcl">수수료 과표<br>(부가세 제외)</div>
+      <div class="pcv">${fw(base)}</div>
+    </div>
+  </div>
+
+  <!-- 수수료 내역 -->
+  <div class="section-title">수수료 내역${cType==='realtor'?' <span style="font-size:10px;font-weight:500;color:#E84646;background:#FEF0F0;padding:2px 8px;border-radius:4px;vertical-align:middle;">팀장·직원 MGM 차감 반영</span>':''}</div>
+  <div class="comm-card">
+    ${commRows()}
+  </div>
+  <div class="comm-total">
+    <div class="ct-label">수수료 합계</div>
+    <div class="ct-val">${fw(displayTComm)}</div>
+  </div>
+
+  <!-- 비율 바 -->
+  <div class="ratio-bar" style="margin-top:16px;">
+    ${Object.values(displayComms).map((a,i)=>`<div class="rb-seg" style="flex:${Math.max(a,0)};background:${COMM_COLORS[i]};"></div>`).join('')}
+    <div class="rb-seg" style="flex:${poolAmt + (cType==='realtor'?GUARANTEE:0)};background:${cType==='realtor'?'#3B6EF8AA':'#18A86BAA'};"></div>
+  </div>
+  <div class="ratio-legend">
+    ${Object.keys(displayComms).map((l,i)=>`<div class="rl-item"><div class="rl-dot" style="background:${COMM_COLORS[i]};"></div>${l}</div>`).join('')}
+    <div class="rl-item"><div class="rl-dot" style="background:${cType==='realtor'?'#3B6EF8AA':'#18A86BAA'};"></div>${cType==='realtor'?'MGM':'팀장+직원 추가'}</div>
+  </div>
+
+  <!-- 고객 할인 & 실구매가 -->
+  <div class="section-title" style="margin-top:24px;">고객 할인 · 실구매가</div>
+  <div class="disc-card">
+    <div class="disc-formula">
+      <span>과표</span>
+      <span class="df-chip" style="background:#F1F3F9;color:var(--text);">${fw(base)}</span>
+      <span>×</span>
+      <span class="df-chip" style="background:var(--red-lt);color:var(--red);">−${fp(totalDisc)}</span>
+      <span>=</span>
+      <span class="df-chip" style="background:var(--red-lt);color:var(--red);">−${fw(discAmt)} 할인</span>
+    </div>
+    <div class="buyer-grid">
+      <div class="buyer-card" style="border-color:rgba(24,168,107,0.3);">
+        <div class="bk-label">① 계약금액 (부가세 포함)</div>
+        <div class="bk-formula">할인과표 ${fw(discBase)}<br>+ 부가세 ${fw(vat)}</div>
+        <div class="bk-val" style="color:var(--green);">${fw(finalVat)}</div>
+      </div>
+      <div class="buyer-card" style="border-color:rgba(59,110,248,0.3);">
+        <div class="bk-label">② 할인과표 (부가세 제외)</div>
+        <div class="bk-formula">부가세 별도<br>&nbsp;</div>
+        <div class="bk-val" style="color:var(--blue);">${fw(finalNoVat)}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MGM / 직접 분배 -->
+  <div class="section-title">${cType==='realtor'?'부동산 MGM':'직접 손님 추가 분배'}</div>
+  ${distHTML}
+  `;
+}
+
+document.getElementById('roomInput').addEventListener('input', render);
+document.getElementById('extraDisc').addEventListener('input', render);
+render();
+</script>
+</body>
+</html>
